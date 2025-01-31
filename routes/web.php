@@ -1,9 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return ['Laravel' => app()->version()];
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/orders/{order}/details', [OrderController::class, 'orderDetails']);
+Route::get('/payment-success', function() {
+    return view('payment-success');
+});

@@ -146,4 +146,9 @@ class OrderController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function orderDetails(Order $order)
+    {
+        return view('orders.details', compact('order'));
+    }
 }
