@@ -51,3 +51,7 @@ test:
 
 .PHONY: lint-and-test
 lint-and-test: lint test ;
+
+.PHONY: model
+model:
+	php artisan make:model $(model) --migration

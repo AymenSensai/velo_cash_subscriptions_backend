@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\DashboardController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -18,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('products/{product}/restock', [ProductController::class, 'restock']);
 
     Route::apiResource('orders', OrderController::class);
+    Route::apiResource('dashboard', DashboardController::class);
 
     Route::apiResource('categories', CategoryController::class);
 });

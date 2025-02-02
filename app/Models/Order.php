@@ -15,6 +15,7 @@ class Order extends Model
         'total_price',
         'order_number',
         'discount',
+        'is_paid',
     ];
 
     public function customer()

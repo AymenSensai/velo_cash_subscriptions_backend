@@ -13,3 +13,5 @@ Route::get('/orders/{order}/details', [OrderController::class, 'orderDetails']);
 Route::get('/payment-success', function() {
     return view('payment-success');
 });
+
+Route::put('/orders/{order}/pay', [OrderController::class, 'pay']);

@@ -63,6 +63,7 @@ class OrderController extends Controller
             'total_price' => $finalPrice,
             'order_number' => $orderNumber,
             'discount' => $discount,
+            'is_paid' => false,
         ]);
 
         foreach ($validated['products'] as $productData) {
@@ -149,6 +150,23 @@ class OrderController extends Controller
 
     public function orderDetails(Order $order)
     {
+        if ($order->is_paid) {
+            return redirect('/payment-success');
+        }
+
         return view('orders.details', compact('order'));
+    }
+
+    public function pay(Request $request, Order $order)
+    {
+        // Ensure that the order is unpaid before updating its status
+        if ($order->is_paid) {
+            return response()->json(['message' => 'Order already paid'], 400);
+        }
+
+        // Update the order status to paid
+        $order->update(['is_paid' => true]);
+
+        return response()->json(['message' => 'Order marked as paid']);
     }
 }

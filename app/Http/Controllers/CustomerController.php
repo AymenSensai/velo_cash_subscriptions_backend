@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use Illuminate\Http\Request;
+
 class CustomerController extends Controller
 {
     public function index(Request $request)
@@ -35,6 +36,7 @@ class CustomerController extends Controller
             'company_name' => 'nullable|string',
             'mobile_number' => 'nullable|string',
             'responsible_name' => 'nullable|string',
+            'has_subscription' => 'nullable|boolean',
         ]);
 
         // Add the user_id to the validated data

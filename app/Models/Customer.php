@@ -20,6 +20,7 @@ class Customer extends Model
         'company_name',
         'mobile_number',
         'responsible_name',
+        'has_subscription',
     ];
 
     public function orders()
