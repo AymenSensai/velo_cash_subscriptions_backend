@@ -9,11 +9,9 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
-        // Get the authenticated user
         $user = $request->user();
-
-        // Fetch customers that belong to the user
         $customers = Customer::where('user_id', $user->id)
+                             ->with('subscription')
                              ->orderBy('created_at', 'desc')
                              ->get();
 
@@ -22,11 +20,8 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        // Capture the authenticated user's id
         $user = $request->user();
-        $userId = $user->id;
 
-        // Validate incoming data
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:customers,name',
             'phone_number' => 'required|string',
@@ -37,26 +32,17 @@ class CustomerController extends Controller
             'mobile_number' => 'nullable|string',
             'responsible_name' => 'nullable|string',
             'has_subscription' => 'nullable|boolean',
+            'subscription_id' => 'nullable|integer|exists:subscriptions,id,user_id,' . $user->id, // Ensure it’s an integer
         ]);
 
-        // Add the user_id to the validated data
-        $validated['user_id'] = $userId;
+        // Convert empty string to null to avoid the PostgreSQL error
+        $validated['subscription_id'] = $validated['subscription_id'] ?? null;
 
-        // Create the customer
+        $validated['user_id'] = $user->id;
+
         $customer = Customer::create($validated);
 
-        // Return the created customer data
-        return response()->json([
-            'id' => $customer->id,
-            'name' => $customer->name,
-            'phone_number' => $customer->phone_number,
-            'email' => $customer->email,
-            'address' => $customer->address,
-            'vat_number' => $customer->vat_number,
-            'company_name' => $customer->company_name,
-            'mobile_number' => $customer->mobile_number,
-            'responsible_name' => $customer->responsible_name,
-        ], 201);
+        return response()->json($customer, 201);
     }
 
     public function show(Customer $customer)
@@ -75,21 +61,12 @@ class CustomerController extends Controller
             'company_name' => 'nullable|string',
             'mobile_number' => 'nullable|string',
             'responsible_name' => 'nullable|string',
+            'subscription_id' => 'nullable|exists:subscriptions,id,user_id,'
         ]);
 
         $customer->update($validated);
 
-        return response()->json([
-            'id' => $customer->id,
-            'name' => $customer->name,
-            'phone_number' => $customer->phone_number,
-            'email' => $customer->email,
-            'address' => $customer->address,
-            'vat_number' => $customer->vat_number,
-            'company_name' => $customer->company_name,
-            'mobile_number' => $customer->mobile_number,
-            'responsible_name' => $customer->responsible_name,
-        ]);
+        return response()->json($customer);
     }
 
     public function destroy(Customer $customer)

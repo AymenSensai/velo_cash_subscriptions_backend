@@ -9,6 +9,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\UserController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -22,6 +24,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('dashboard', DashboardController::class);
 
     Route::apiResource('categories', CategoryController::class);
+
+    Route::apiResource('subscriptions', SubscriptionController::class);
+    Route::post('update-billing-day', [UserController::class, 'updateBillingDay']);
+
+    Route::get('customers-with-subscriptions', [SubscriptionController::class, 'getCustomersWithSubscriptions']);
+    Route::middleware('auth:sanctum')->get('/profile', [UserController::class, 'profile']);
 });
 
 Route::post('register', [RegisteredUserController::class, 'store'])

@@ -39,4 +39,7 @@ return [
         'api_key'    => env('CLOUDINARY_API_KEY'),
         'api_secret' => env('CLOUDINARY_API_SECRET'),
     ],
+    'lahza' => [
+        'secret_key' => env('LAHZA_SECRET_KEY'),
+    ],
 ];

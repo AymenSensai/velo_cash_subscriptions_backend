@@ -28,7 +28,8 @@ class OrderController extends Controller
             'products' => 'required|array',
             'products.*.id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
-            'discount' => 'nullable|numeric|min:0', // Validate discount
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0', // Add tax validation
         ]);
 
         $user = $request->user();
@@ -38,7 +39,6 @@ class OrderController extends Controller
         foreach ($validated['products'] as $productData) {
             $product = Product::findOrFail($productData['id']);
 
-            // Ensure that the product has enough quantity before placing the order
             if ($product->quantity < $productData['quantity']) {
                 return response()->json([
                     'message' => 'Not enough stock for product: ' . $product->name
@@ -46,14 +46,13 @@ class OrderController extends Controller
             }
 
             $totalPrice += $product->price * $productData['quantity'];
-
-            // Reduce the quantity of the product
             $product->decrement('quantity', $productData['quantity']);
         }
 
-        // Apply discount if provided
         $discount = $validated['discount'] ?? 0;
-        $finalPrice = $totalPrice - $discount;
+        $tax = $validated['tax'] ?? 0;
+
+        $finalPrice = round(($totalPrice - $discount) * (1 + $tax), 2);
 
         $orderNumber = 'ORD-' . strtoupper(uniqid());
 
@@ -63,6 +62,7 @@ class OrderController extends Controller
             'total_price' => $finalPrice,
             'order_number' => $orderNumber,
             'discount' => $discount,
+            'tax' => $tax,
             'is_paid' => false,
         ]);
 
@@ -76,7 +76,7 @@ class OrderController extends Controller
 
         return response()->json([
             'order_number' => $order->order_number,
-            'order' => $order->load('customer', 'products'),
+            'order' => $order->load('customer', 'products.category'),
         ], 201);
     }
 
@@ -92,13 +92,13 @@ class OrderController extends Controller
             'products' => 'required|array',
             'products.*.id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
-            'discount' => 'nullable|numeric|min:0', // Validate discount
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0', // Add tax validation
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
         $totalPrice = 0;
 
-        // Detach old products first (reset quantities)
         foreach ($order->products as $product) {
             $orderProductData = $order->products->find($product->id);
             if ($orderProductData) {
@@ -111,7 +111,6 @@ class OrderController extends Controller
         foreach ($validated['products'] as $productData) {
             $product = Product::findOrFail($productData['id']);
 
-            // Ensure there is enough stock to update
             if ($product->quantity < $productData['quantity']) {
                 return response()->json([
                     'message' => 'Not enough stock for product: ' . $product->name
@@ -119,8 +118,6 @@ class OrderController extends Controller
             }
 
             $totalPrice += $product->price * $productData['quantity'];
-
-            // Decrement the product quantity
             $product->decrement('quantity', $productData['quantity']);
             $order->products()->attach($product->id, [
                 'quantity' => $productData['quantity'],
@@ -129,12 +126,15 @@ class OrderController extends Controller
         }
 
         $discount = $validated['discount'] ?? $order->discount;
-        $finalPrice = $totalPrice - $discount;
+        $tax = $validated['tax'] ?? $order->tax;
+
+        $finalPrice = ($totalPrice - $discount) * (1 + $tax);
 
         $order->update([
             'customer_id' => $customer->id,
             'total_price' => $finalPrice,
             'discount' => $discount,
+            'tax' => $tax,
         ]);
 
         return response()->json($order->load('customer', 'products'));

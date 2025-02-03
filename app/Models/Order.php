@@ -16,7 +16,13 @@ class Order extends Model
         'order_number',
         'discount',
         'is_paid',
+        'tax',
     ];
+
+    public function getTotalPriceAttribute($value)
+    {
+        return (string) number_format($value, 2, '.', '');
+    }
 
     public function customer()
     {

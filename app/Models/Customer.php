@@ -9,7 +9,6 @@ class Customer extends Model
 {
     use HasFactory;
 
-
     protected $fillable = [
         'name',
         'phone_number',
@@ -21,6 +20,8 @@ class Customer extends Model
         'mobile_number',
         'responsible_name',
         'has_subscription',
+        'subscription_id',
+        'authorization_code',
     ];
 
     public function orders()
@@ -31,5 +32,10 @@ class Customer extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class);
     }
 }
