@@ -109,15 +109,15 @@
                     <tr>
                         <td>{{ $product->name }}</td>
                         <td>{{ $product->pivot->quantity }}</td>
-                        <td>${{ number_format($product->pivot->price, 2) }}</td>
-                        <td>${{ number_format($product->pivot->quantity * $product->pivot->price, 2) }}</td>
+                        <td>{{ number_format($product->pivot->price, 2) }} ILS</td>
+                        <td>{{ number_format($product->pivot->quantity * $product->pivot->price, 2) }} ILS</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
         <!-- Total Price -->
-        <h3>Total Price: ${{ number_format($order->total_price, 2) }}</h3>
+        <h3>Total Price: {{ number_format($order->total_price, 2) }} ILS</h3>
 
         <!-- Payment Form -->
         <form id="paymentForm">
@@ -139,7 +139,7 @@
                 key: 'pk_test_NkiI4AG4Ut6SkJx8IFzbCE3YD8mAF3did',
                 email: document.getElementById("email").value,
                 amount: document.getElementById("amount").value * 100,
-                currency: "USD",
+                currency: "ILS",
                 onSuccess: function(response) {
                     fetch(`/orders/${orderId}/pay`, {
                         method: "PUT",

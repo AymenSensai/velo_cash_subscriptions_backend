@@ -79,7 +79,7 @@
 
         @if($subscription)
             <p><strong>Name:</strong> {{ $subscription->name }}</p>
-            <p><strong>Price:</strong> ${{ number_format($subscription->price, 2) }}</p>
+            <p><strong>Price:</strong> {{ number_format($subscription->price, 2) }} ILS</p>
 
             <!-- Payment Form -->
             <form id="paymentForm">
@@ -107,7 +107,7 @@
                 key: 'pk_test_NkiI4AG4Ut6SkJx8IFzbCE3YD8mAF3did',
                 email: document.getElementById("email").value,
                 amount: document.getElementById("amount").value * 100,
-                currency: "USD",
+                currency: "ILS",
                 reference: reference,
                 onSuccess: async function(response) {
                     try {
