@@ -85,4 +85,34 @@ class CustomerController extends Controller
 
         return response()->json($orders);
     }
+
+    public function toggleSubscription(Request $request, Customer $customer)
+    {
+        $user = $request->user();
+
+        if ($customer->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if ($customer->has_subscription) {
+            // Remove subscription
+            $customer->update([
+                'has_subscription' => false,
+                'subscription_id' => null
+            ]);
+        } else {
+            // Validate subscription_id before assigning
+            $validated = $request->validate([
+                'subscription_id' => 'required|exists:subscriptions,id,user_id,' . $user->id,
+            ]);
+
+            // Assign subscription
+            $customer->update([
+                'has_subscription' => true,
+                'subscription_id' => $validated['subscription_id']
+            ]);
+        }
+
+        return response()->json($customer);
+    }
 }

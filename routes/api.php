@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::post('products/{product}/restock', [ProductController::class, 'restock']);
 
+    Route::get('/orders/all', [OrderController::class, 'getAllOrders']);
     Route::apiResource('orders', OrderController::class);
     Route::apiResource('dashboard', DashboardController::class);
 
@@ -29,7 +30,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('update-billing-day', [UserController::class, 'updateBillingDay']);
 
     Route::get('customers-with-subscriptions', [SubscriptionController::class, 'getCustomersWithSubscriptions']);
-    Route::middleware('auth:sanctum')->get('/profile', [UserController::class, 'profile']);
+    Route::get('/profile', [UserController::class, 'profile']);
+
+    Route::post('customers/{customer}/toggle-subscription', [CustomerController::class, 'toggleSubscription']);
 });
 
 Route::post('register', [RegisteredUserController::class, 'store'])

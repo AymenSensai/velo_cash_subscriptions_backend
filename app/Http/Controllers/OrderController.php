@@ -9,6 +9,17 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
+    public function getAllOrders()
+    {
+        $user = auth()->user();
+
+        $orders = Order::with(['customer', 'products.category'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        return response()->json($orders);
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
