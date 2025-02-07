@@ -165,9 +165,15 @@ class OrderController extends Controller
             return redirect('/payment-success');
         }
 
-        return view('orders.details', compact('order'));
-    }
+        // Eager load the products with pivot data
+        $order->load('products');
 
+        // Pass the products as $items to the view
+        return view('orders.details', [
+            'order' => $order,
+            'items' => $order->products
+        ]);
+    }
     public function pay(Request $request, Order $order)
     {
         // Ensure that the order is unpaid before updating its status

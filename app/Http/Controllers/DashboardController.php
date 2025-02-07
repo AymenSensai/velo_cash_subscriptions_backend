@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Product;
 use App\Models\Customer;
+use App\Models\Subscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,14 +13,25 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        $orders_number = Order::where('user_id', $user->id)->count();
-        $products_number = Product::where('user_id', $user->id)->count();
+        // Get total number of customers for the authenticated user
         $customers_number = Customer::where('user_id', $user->id)->count();
 
+        // Get the number of customers with at least one active subscription
+        $subscribed_customers_number = Customer::where('user_id', $user->id)
+            ->whereHas('subscriptions', function ($query) {
+                $query->where('is_paused', false);
+            })
+            ->count();
+
+        // Calculate the expected revenue from active subscriptions
+        $expected_revenue = Subscription::whereHas('customers', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->sum('price');
+
         return response()->json([
-            'orders_number' => $orders_number,
-            'products_number' => $products_number,
             'customers_number' => $customers_number,
+            'subscribed_customers_number' => $subscribed_customers_number,
+            'expected_revenue' => $expected_revenue,
         ]);
     }
 }

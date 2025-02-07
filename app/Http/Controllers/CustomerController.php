@@ -11,7 +11,9 @@ class CustomerController extends Controller
     {
         $user = $request->user();
         $customers = Customer::where('user_id', $user->id)
-                             ->with('subscription')
+                             ->with(['subscriptions' => function ($query) {
+                                 $query->withPivot('is_paused');
+                             }])
                              ->orderBy('created_at', 'desc')
                              ->get();
 
@@ -32,17 +34,23 @@ class CustomerController extends Controller
             'mobile_number' => 'nullable|string',
             'responsible_name' => 'nullable|string',
             'has_subscription' => 'nullable|boolean',
-            'subscription_id' => 'nullable|integer|exists:subscriptions,id,user_id,' . $user->id, // Ensure it’s an integer
+            'subscription_ids' => 'nullable|array',
+            'subscription_ids.*' => 'exists:subscriptions,id',
         ]);
-
-        // Convert empty string to null to avoid the PostgreSQL error
-        $validated['subscription_id'] = $validated['subscription_id'] ?? null;
 
         $validated['user_id'] = $user->id;
 
+        // Create the customer first
         $customer = Customer::create($validated);
 
-        return response()->json($customer, 201);
+        // Attach selected subscriptions to the customer
+        if (!empty($validated['subscription_ids'])) {
+            foreach ($validated['subscription_ids'] as $subscriptionId) {
+                $customer->subscriptions()->attach($subscriptionId, ['is_paused' => false]);
+            }
+        }
+
+        return response()->json($customer->load('subscriptions'), 201);
     }
 
     public function show(Customer $customer)
@@ -86,33 +94,38 @@ class CustomerController extends Controller
         return response()->json($orders);
     }
 
-    public function toggleSubscription(Request $request, Customer $customer)
+    public function addSubscription(Request $request, Customer $customer)
     {
-        $user = $request->user();
+        $validated = $request->validate([
+            'subscription_id' => 'required|exists:subscriptions,id',
+        ]);
 
-        if ($customer->user_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $subscriptionId = $validated['subscription_id'];
+
+        if ($customer->subscriptions()->where('subscription_id', $subscriptionId)->exists()) {
+            return response()->json(['message' => 'Subscription already assigned to this customer.'], 409);
         }
 
-        if ($customer->has_subscription) {
-            // Remove subscription
-            $customer->update([
-                'has_subscription' => false,
-                'subscription_id' => null
-            ]);
-        } else {
-            // Validate subscription_id before assigning
-            $validated = $request->validate([
-                'subscription_id' => 'required|exists:subscriptions,id,user_id,' . $user->id,
-            ]);
+        $customer->subscriptions()->attach($subscriptionId, ['is_paused' => false]);
 
-            // Assign subscription
-            $customer->update([
-                'has_subscription' => true,
-                'subscription_id' => $validated['subscription_id']
-            ]);
+        return response()->json(['message' => 'Subscription added successfully.', 'customer' => $customer->load('subscriptions')], 201);
+    }
+
+    public function toggleSubscriptionPause(Request $request, Customer $customer, $subscriptionId)
+    {
+        if (!$customer->subscriptions()->where('subscription_id', $subscriptionId)->exists()) {
+            return response()->json(['message' => 'Subscription not found for this customer.'], 404);
         }
 
-        return response()->json($customer);
+        $currentStatus = $customer->subscriptions()->where('subscription_id', $subscriptionId)->first()->pivot->is_paused;
+
+        $customer->subscriptions()->updateExistingPivot($subscriptionId, [
+            'is_paused' => !$currentStatus,
+        ]);
+
+        return response()->json([
+            'message' => 'Subscription status updated successfully.',
+            'is_paused' => !$currentStatus,
+        ]);
     }
 }

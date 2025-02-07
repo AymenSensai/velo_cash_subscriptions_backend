@@ -9,10 +9,12 @@ class Subscription extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'price', 'user_id', 'is_paid', 'authorization_code'];
+    protected $fillable = ['name', 'price'];
 
-    public function user()
+    public function customers()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsToMany(Customer::class, 'customer_subscription')
+                    ->withPivot('is_paused')
+                    ->withTimestamps();
     }
 }

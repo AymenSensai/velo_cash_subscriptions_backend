@@ -10,25 +10,18 @@ use Illuminate\Http\Request;
 class SubscriptionController extends Controller
 {
     // Get subscriptions for the authenticated user
-    public function index(Request $request)
+    public function index()
     {
-        $user = $request->user();
-        $subscriptions = Subscription::where('user_id', $user->id)->get();
-
-        return response()->json($subscriptions);
+        return response()->json(Subscription::all());
     }
 
     // Store a new subscription for the authenticated user
     public function store(Request $request)
     {
-        $user = $request->user();
-
         $validated = $request->validate([
-            'name' => 'required|string|unique:subscriptions,name,NULL,id,user_id,' . $user->id . '|max:255',
+            'name' => 'required|string|max:255|unique:subscriptions,name',
             'price' => 'required|numeric|min:0',
         ]);
-
-        $validated['user_id'] = $user->id;
 
         $subscription = Subscription::create($validated);
 
@@ -73,53 +66,69 @@ class SubscriptionController extends Controller
 
         return response()->json(null, 204);
     }
+
     public function subscriptionDetails(Customer $customer)
     {
-        $subscription = $customer->subscription;
-
-        if (!$subscription) {
-            return response()->json(['message' => 'No subscription found'], 404);
+        // If subscriptions are paid, redirect to success page
+        if ($customer->payed_subscriptions) {
+            return redirect()->route('subscription.success');
         }
 
-        $reference = $this->generateReference($subscription->id);
+        $subscriptions = $customer->subscriptions;
 
-        return view('subscriptions.details', compact('subscription', 'customer', 'reference'));
+        if ($subscriptions->isEmpty()) {
+            return response()->json(['message' => 'No subscriptions found'], 404);
+        }
+
+        $reference = $this->generateReference();
+
+        return view('subscriptions.details', compact('subscriptions', 'customer', 'reference'));
     }
 
     public function pay(Request $request, Customer $customer)
     {
-        $subscription = $customer->subscription;
+        try {
+            $authorizationCode = $request->input('authorization_code');
 
-        if (!$subscription) {
-            return response()->json(['message' => 'No subscription found'], 404);
+            // Get the subscriptions that belong to the customer
+            $subscriptions = $customer->subscriptions;
+
+            if ($subscriptions->isEmpty()) {
+                // Mark as false since no valid subscriptions found
+                $customer->update(['payed_subscriptions' => false]);
+                return response()->json(['error' => 'No valid subscriptions found'], 404);
+            }
+
+            // Save authorization code in customer record
+            $customer->update([
+                'authorization_code' => $authorizationCode,
+                'payed_subscriptions' => true  // Mark as paid
+            ]);
+
+            return response()->json([
+                'message' => 'Subscriptions marked as paid',
+                'paid_subscriptions' => $subscriptions
+            ]);
+
+        } catch (\Exception $e) {
+            // If an error occurs, mark as false
+            $customer->update(['payed_subscriptions' => false]);
+
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $authorizationCode = $request->input('authorization_code');
-        $reference = $request->input('reference');
-
-        // Update the customer's authorization code
-        $customer->update([
-            'authorization_code' => $authorizationCode,
-            'reference' => $reference
-        ]);
-
-        // Mark the subscription as paid
-        $subscription->update(['is_paid' => true]);
-
-        return response()->json(['message' => 'Subscription marked as paid']);
     }
 
     // In your controller or a helper function
-    function generateReference($subscriptionId) {
+    function generateReference() {
         $timestamp = time(); // Current timestamp
         $randomString = bin2hex(random_bytes(4)); // Random string
-        return "sub_{$subscriptionId}_{$timestamp}_{$randomString}";
+        return "sub_{$timestamp}_{$randomString}";
     }
 
     public function getCustomersWithSubscriptions()
     {
-        // Retrieve customers with their subscriptions
-        $customers = Customer::with('subscription')->whereHas('subscription')->get();
+        // Retrieve customers who have subscriptions
+        $customers = Customer::with('subscriptions')->whereHas('subscriptions')->get();
 
         // Return the customers with their subscriptions
         return response()->json($customers);

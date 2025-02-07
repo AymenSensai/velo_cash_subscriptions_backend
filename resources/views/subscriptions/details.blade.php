@@ -43,6 +43,33 @@
             text-align: right;
         }
 
+        /* Subscription List */
+        .subscription-list {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .subscription-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .subscription-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Total Price */
+        .total-price {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 10px;
+        }
+
         /* Pay Button */
         .btn-pay {
             display: block;
@@ -56,6 +83,7 @@
             font-size: 16px;
             margin-top: 15px;
         }
+
         .btn-pay:hover {
             background: #0056b3;
         }
@@ -74,37 +102,49 @@
             </div>
         </div>
 
-        <!-- Subscription Details -->
+        <!-- Subscription List -->
         <h2>Subscription Details</h2>
 
-        @if($subscription)
-            <p><strong>Name:</strong> {{ $subscription->name }}</p>
-            <p><strong>Price:</strong> {{ number_format($subscription->price, 2) }} ILS</p>
+        @if($subscriptions->isNotEmpty())
+            <div class="subscription-list">
+                @foreach($subscriptions as $subscription)
+                    <div class="subscription-item">
+                        <span><strong>{{ $subscription->name }}</strong></span>
+                        <span>{{ number_format($subscription->price, 2) }} ILS</span>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Total Price -->
+            <div class="total-price">
+                Total: {{ number_format($subscriptions->sum('price'), 2) }} ILS
+            </div>
 
             <!-- Payment Form -->
             <form id="paymentForm">
                 <input type="hidden" id="email" value="{{ $customer->email }}" />
-                <input type="hidden" id="amount" value="{{ $subscription->price }}" />
+                <input type="hidden" id="amount" value="{{ $subscriptions->sum('price') }}" />
                 <input type="hidden" id="customerId" value="{{ $customer->id }}" />
                 <input type="hidden" id="authorization_code" name="authorization_code" />
                 <button type="submit" class="btn-pay">Pay Now</button>
             </form>
         @else
-            <p>No active subscription found.</p>
+            <p>No active subscriptions found.</p>
         @endif
     </div>
 
     <!-- Payment Script -->
     <script>
-        document.getElementById("paymentForm")?.addEventListener("submit", function (e) {
+        document.getElementById("paymentForm")?.addEventListener("submit", async function (e) {
             e.preventDefault();
 
-            const reference = "{{ $reference }}";
+            const reference = "{{ $reference }}"; // Use the first reference
             const customerId = document.getElementById("customerId").value;
-            const lahza = new LahzaPopup();
+            const subscriptionIds = @json($subscriptions->pluck('id')); // Get all subscription IDs
 
+            const lahza = new LahzaPopup();
             lahza.newTransaction({
-                key: 'pk_test_NkiI4AG4Ut6SkJx8IFzbCE3YD8mAF3did',
+                key: "{{ env('LAHZA_PUBLIC_KEY') }}",
                 email: document.getElementById("email").value,
                 amount: document.getElementById("amount").value * 100,
                 currency: "ILS",
@@ -114,7 +154,7 @@
                         const verifyResponse = await fetch(`https://api.lahza.io/transaction/verify/${reference}`, {
                             method: 'GET',
                             headers: {
-                                'authorization': `Bearer sk_test_BcCjJ5PLGNxjG6sGgtsSw1rYl3K86AlzA`
+                                'authorization': `Bearer {{ env('LAHZA_SECRET_KEY') }}`
                             }
                         });
 
@@ -124,7 +164,7 @@
                             throw new Error(verifyData.message || "Failed to verify transaction");
                         }
 
-                        // Step 2: Send the authorization_code to your server
+                        // Step 2: Send the subscription IDs and authorization code to the server
                         const payResponse = await fetch(`/subscriptions/${customerId}/pay`, {
                             method: "PUT",
                             headers: {
@@ -132,14 +172,13 @@
                                 "X-CSRF-TOKEN": "{{ csrf_token() }}"
                             },
                             body: JSON.stringify({
-                                reference: reference,
                                 authorization_code: verifyData.data.authorization.authorization_code
                             })
                         });
 
                         const payData = await payResponse.json();
 
-                        if (payData.message === "Subscription marked as paid") {
+                        if (payData.message === "Subscriptions marked as paid") {
                             window.location.href = "/subscription-success";
                         } else {
                             alert("Payment update failed: " + payData.message);

@@ -128,15 +128,15 @@
     </div>
 
     <!-- Payment Script -->
+
     <script>
         document.getElementById("paymentForm").addEventListener("submit", function (e) {
             e.preventDefault();
-
             const orderId = "{{ $order->id }}";
             const lahza = new LahzaPopup();
 
             lahza.newTransaction({
-                key: 'pk_test_NkiI4AG4Ut6SkJx8IFzbCE3YD8mAF3did',
+                key: "{{ env('LAHZA_PUBLIC_KEY') }}",
                 email: document.getElementById("email").value,
                 amount: document.getElementById("amount").value * 100,
                 currency: "ILS",
@@ -159,7 +159,7 @@
                     })
                     .catch(err => console.error("Payment update error:", err));
                 },
-                onError: function(error) {
+                onError: function() {
                     alert("Payment failed. Please try again.");
                 }
             });

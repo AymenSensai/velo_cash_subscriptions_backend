@@ -32,7 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('customers-with-subscriptions', [SubscriptionController::class, 'getCustomersWithSubscriptions']);
     Route::get('/profile', [UserController::class, 'profile']);
 
-    Route::post('customers/{customer}/toggle-subscription', [CustomerController::class, 'toggleSubscription']);
+    Route::post('/customers/{customer}/add-subscription', [CustomerController::class, 'addSubscription']);
+    Route::put('/customers/{customer}/toggle-subscription/{subscriptionId}', [CustomerController::class, 'toggleSubscriptionPause']);
 });
 
 Route::post('register', [RegisteredUserController::class, 'store'])

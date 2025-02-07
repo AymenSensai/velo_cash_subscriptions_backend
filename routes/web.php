@@ -20,5 +20,5 @@ Route::put('/orders/{order}/pay', [OrderController::class, 'pay']);
 Route::get('/subscriptions/{customer}/details', [SubscriptionController::class, 'subscriptionDetails']);
 Route::get('/subscription-success', function() {
     return view('subscriptions.subscription-success');
-});
+})->name('subscription.success');
 Route::put('/subscriptions/{customer}/pay', [SubscriptionController::class, 'pay']);

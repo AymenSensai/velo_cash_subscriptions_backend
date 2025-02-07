@@ -20,9 +20,11 @@ class Customer extends Model
         'mobile_number',
         'responsible_name',
         'has_subscription',
-        'subscription_id',
         'authorization_code',
+        'payed_subscriptions',
     ];
+
+    protected $hidden = ['authorization_code'];
 
     public function orders()
     {
@@ -34,8 +36,10 @@ class Customer extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function subscription()
+    public function subscriptions()
     {
-        return $this->belongsTo(Subscription::class);
+        return $this->belongsToMany(Subscription::class, 'customer_subscription')
+                    ->withPivot('is_paused')
+                    ->withTimestamps();
     }
 }
