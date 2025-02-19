@@ -23,10 +23,15 @@ class DashboardController extends Controller
             })
             ->count();
 
-        // Calculate the expected revenue from active subscriptions
-        $expected_revenue = Subscription::whereHas('customers', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->sum('price');
+        // Calculate expected revenue by iterating over customers and summing their active subscriptions
+        $expected_revenue = Customer::where('user_id', $user->id)
+            ->with(['subscriptions' => function ($query) {
+                $query->where('is_paused', false);
+            }])
+            ->get()
+            ->sum(function ($customer) {
+                return $customer->subscriptions->sum('price');
+            });
 
         return response()->json([
             'customers_number' => $customers_number,
