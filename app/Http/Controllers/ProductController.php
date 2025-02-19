@@ -31,7 +31,7 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'name' => 'required|string|max:255',
             'barcode' => 'required|string|unique:products',
-            'sku' => 'required|string|unique:products',
+            'sku' => 'nullable|string|unique:products', // Changed 'required' to 'nullable'
             'category_id' => 'nullable|exists:categories,id',
             'price' => 'required|numeric|min:0',
             'quantity' => 'required|integer|min:0',

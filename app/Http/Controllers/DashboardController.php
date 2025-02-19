@@ -31,7 +31,7 @@ class DashboardController extends Controller
         return response()->json([
             'customers_number' => $customers_number,
             'subscribed_customers_number' => $subscribed_customers_number,
-            'expected_revenue' => $expected_revenue,
+            'expected_revenue' => number_format($expected_revenue, 2, '.', ''),
         ]);
     }
 }

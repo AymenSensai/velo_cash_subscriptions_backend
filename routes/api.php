@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/customers/{customer}/add-subscription', [CustomerController::class, 'addSubscription']);
     Route::put('/customers/{customer}/toggle-subscription/{subscriptionId}', [CustomerController::class, 'toggleSubscriptionPause']);
+    Route::patch('/customers/{customer}/toggle-subscription', [CustomerController::class, 'toggleHasSubscription']);
 });
 
 Route::post('register', [RegisteredUserController::class, 'store'])

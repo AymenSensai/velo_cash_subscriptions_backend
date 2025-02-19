@@ -9,14 +9,30 @@ use Illuminate\Support\Facades\Log;
 
 class ProcessRecurringPayments extends Command
 {
-    protected $signature = 'payments:process-recurring';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'app:process-recurring-payments';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
     protected $description = 'Process recurring payments for all customers on the 16th of each month';
 
+    /**
+     * Execute the console command.
+     */
     public function handle()
     {
         $customers = Customer::whereHas('subscriptions', function ($query) {
             $query->where('is_paused', false);
         })->get();
+
+        Log::info("Starting recurring payments processing for {$customers->count()} customers.");
 
         foreach ($customers as $customer) {
             $totalAmount = $customer->subscriptions->where('pivot.is_paused', false)->sum('price');
@@ -39,7 +55,7 @@ class ProcessRecurringPayments extends Command
                     Log::info("Payment successful for customer ID: {$customer->id}");
 
                     // Send WhatsApp message
-                    $this->sendWhatsAppMessage($customer, $totalAmount);
+                    // $this->sendWhatsAppMessage($customer, $totalAmount);
                 } else {
                     $customer->update(['payed_subscriptions' => false]);
 
@@ -51,25 +67,32 @@ class ProcessRecurringPayments extends Command
         }
 
         $this->info('Recurring payments processed successfully.');
+
     }
 
     private function sendWhatsAppMessage(Customer $customer, $amount)
     {
+        // Format phone number: Replace leading '0' with '+972'
+        $formattedPhoneNumber = '+972' . ltrim($customer->phone_number, '0');
+
+        // Message content
         $message = "Dear {$customer->name}, your payment of {$amount} ILS has been processed successfully. Thank you!";
 
+        // Send WhatsApp message request
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
         ])->post('https://velocash.site/api/create-message', [
             'appkey' => env('VELOCASH_APP_KEY'),
             'authkey' => env('VELOCASH_AUTH_KEY'),
-            'to' => $customer->phone_number,
+            'to' => $formattedPhoneNumber,
             'message' => $message,
         ]);
 
+        // Logging the result
         if ($response->successful()) {
-            Log::info("WhatsApp message sent to {$customer->phone_number}");
+            Log::info("WhatsApp message sent to {$formattedPhoneNumber}");
         } else {
-            Log::error("Failed to send WhatsApp message to {$customer->phone_number}", [
+            Log::error("Failed to send WhatsApp message to {$formattedPhoneNumber}", [
                 'response' => $response->body(),
             ]);
         }

@@ -12,7 +12,11 @@ class SubscriptionController extends Controller
     // Get subscriptions for the authenticated user
     public function index()
     {
-        return response()->json(Subscription::all());
+        $user = auth()->user();
+
+        $subscriptions = Subscription::get();
+
+        return response()->json($subscriptions);
     }
 
     // Store a new subscription for the authenticated user
@@ -127,8 +131,13 @@ class SubscriptionController extends Controller
 
     public function getCustomersWithSubscriptions()
     {
-        // Retrieve customers who have subscriptions
-        $customers = Customer::with('subscriptions')->whereHas('subscriptions')->get();
+        // Retrieve customers who have subscriptions and has_subscription is true
+        $user = auth()->user();
+
+        $customers = Customer::with('subscriptions')
+            ->where('user_id', $user->id)
+            ->where('has_subscription', true)
+            ->get();
 
         // Return the customers with their subscriptions
         return response()->json($customers);

@@ -14,6 +14,7 @@ class OrderController extends Controller
         $user = auth()->user();
 
         $orders = Order::with(['customer', 'products.category'])
+                    ->where('user_id', $user->id)
                     ->orderBy('created_at', 'desc')
                     ->get();
 

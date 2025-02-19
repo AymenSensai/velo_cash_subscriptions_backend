@@ -7,16 +7,12 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
-    protected $commands = [
-        'App\Console\Commands\ProcessRecurringPayments',
-    ];
-
     /**
      * Define the application's command schedule.
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('payments:process-recurring')->monthlyOn(16, '00:00');
+        $schedule->command('app:process-recurring-payments')->everyMinute()->withoutOverlapping();
     }
 
     /**

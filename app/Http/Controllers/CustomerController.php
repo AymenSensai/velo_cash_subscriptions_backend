@@ -128,4 +128,22 @@ class CustomerController extends Controller
             'is_paused' => !$currentStatus,
         ]);
     }
+
+    public function toggleHasSubscription(Customer $customer)
+    {
+        if ($customer->has_subscription) {
+            // Set to false and clear subscriptions
+            $customer->subscriptions()->detach();
+            $customer->update(['has_subscription' => false]);
+        } else {
+            // Set to true but keep subscriptions empty
+            $customer->update(['has_subscription' => true]);
+        }
+
+        return response()->json([
+            'message' => 'Subscription status toggled successfully.',
+            'has_subscription' => $customer->has_subscription,
+            'subscriptions' => $customer->subscriptions()->get(),
+        ]);
+    }
 }

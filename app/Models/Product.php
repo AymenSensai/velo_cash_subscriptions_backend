@@ -21,8 +21,6 @@ class Product extends Model
         'user_id',
     ];
 
-    protected $appends = ['image'];
-
     public function getImageAttribute()
     {
         return $this->attributes['image'] ? $this->attributes['image'] : null;
